@@ -26,7 +26,7 @@
 #   Install phpunit
 #
 # [*extensions*]
-#   Install PHP extensions, this is overwritten by hiera hash `php::extensions`
+#   Install PHP extensions
 #
 # [*package_prefix*]
 #   This is the prefix for constructing names of php packages. This defaults
@@ -42,7 +42,7 @@ class php (
   $pear           = true,
   $pear_ensure    = $::php::params::pear_ensure,
   $phpunit        = false,
-  $extensions     = {},
+  $extensions     = undef,
   $settings       = {},
   $package_prefix = $::php::params::package_prefix,
 ) inherits ::php::params {
@@ -55,7 +55,9 @@ class php (
   validate_bool($pear)
   validate_string($pear_ensure)
   validate_bool($phpunit)
-  validate_hash($extensions)
+  if ($extensions != undef){
+    validate_hash($extensions)
+  }
   validate_hash($settings)
 
   # Deep merge global php settings
@@ -103,7 +105,10 @@ class php (
     Anchor['php::end']
   }
 
-  $real_extensions = hiera_hash('php::extensions', $extensions)
+  $real_extensions = $extensions ? {
+    undef   => hiera_hash('php::extensions', {}),
+    default => $extensions,
+  }
   create_resources('::php::extension', $real_extensions, {
     require => Class['::php::cli'],
     before  => Anchor['php::end']
